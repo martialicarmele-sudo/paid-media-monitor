@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Paid Media Monitor — Docta Nexus</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#08080f;--s1:#0f0f19;--s2:#151522;--s3:#1c1c2c;--line:#24243a;--line2:#303050;
+  --text:#ecedf7;--muted:#8a8aa6;--muted2:#5a5a76;
+  --blue:#1B17FF;--blue2:#5b58ff;--blue-dim:rgba(91,88,255,.12);
+  --orange:#FF751F;--orange-dim:rgba(255,117,31,.12);
+  --ok:#5de8a0;--ok-dim:rgba(93,232,160,.1);
+  --warn:#f5a623;--warn-dim:rgba(245,166,35,.12);
+  --crit:#f26d6d;--crit-dim:rgba(242,109,109,.12);
+  --info:#60a5fa;--info-dim:rgba(96,165,250,.12);
+  --r:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--text);font-family:'DM Sans',system-ui,sans-serif;font-size:14px}
+body{min-height:100vh;overflow-x:hidden}
+button{font-family:inherit;cursor:pointer}
+input,select,textarea{font-family:inherit;font-size:14px;background:var(--s2);color:var(--text);border:1.5px solid var(--line2);border-radius:8px;padding:9px 11px;outline:none;width:100%}
+input:focus,select:focus{border-color:var(--blue2)}
+.mono{font-family:'DM Mono',monospace}
+.muted{color:var(--muted)}
+.hidden{display:none!important}
+
+/* Botones */
+.btn{border:1px solid var(--line2);background:var(--s2);color:var(--text);border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn:hover{border-color:var(--blue2)}
+.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn.primary:hover{background:#2f2bff}
+.btn.accent{background:var(--orange);border-color:var(--orange);color:#1a0d04}
+.btn.ghost{background:none}
+.btn.sm{padding:5px 10px;font-size:12px}
+.btn.danger{color:var(--crit)}
+.btn:disabled{opacity:.5;cursor:default}
+
+/* Login */
+.login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px;background:radial-gradient(ellipse 60% 50% at 50% 0%,rgba(27,23,255,.18),transparent 70%)}
+.login-card{background:var(--s1);border:1px solid var(--line2);border-radius:16px;padding:32px;width:100%;max-width:360px}
+.brand{display:flex;align-items:center;gap:10px}
+.brand-mark{width:30px;height:30px;flex-shrink:0}
+.brand-name{font-weight:800;letter-spacing:-.02em;font-size:16px;line-height:1.1}
+.brand-name span{color:var(--orange)}
+.brand-sub{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.err{color:var(--crit);font-size:13px;margin-top:8px;min-height:18px}
+
+/* Layout */
+.app{display:flex;min-height:100vh}
+.side{width:220px;background:var(--s1);border-right:1px solid var(--line);position:fixed;inset:0 auto 0 0;display:flex;flex-direction:column;z-index:30}
+.side .brand{padding:18px 16px;border-bottom:1px solid var(--line)}
+.nav{padding:10px 8px;flex:1}
+.nav button{width:100%;display:flex;align-items:center;gap:10px;background:none;border:none;color:var(--muted);padding:9px 10px;border-radius:8px;font-size:13.5px;font-weight:500;text-align:left}
+.nav button:hover{background:var(--s2);color:var(--text)}
+.nav button.on{background:var(--blue-dim);color:var(--text);font-weight:700}
+.nav button.on svg{color:var(--orange)}
+.nav svg{width:17px;height:17px;flex-shrink:0}
+.nav .count{margin-left:auto;background:var(--crit);color:#fff;border-radius:10px;font-size:10.5px;font-weight:700;padding:1px 7px}
+.nav .count.warn{background:var(--warn);color:#1a1204}
+.side-foot{padding:12px 16px;border-top:1px solid var(--line);font-size:11.5px;color:var(--muted2);line-height:1.6}
+.main{margin-left:220px;flex:1;min-width:0}
+.top{position:sticky;top:0;z-index:20;background:rgba(8,8,15,.9);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:12px 24px;display:flex;align-items:center;gap:12px}
+.top h1{font-size:17px;font-weight:700;flex:1;min-width:0}
+.menu-btn{display:none;background:none;border:none;color:var(--text);padding:4px}
+.content{padding:22px 24px 60px;max-width:1400px}
+.page{display:none}.page.on{display:block}
+
+/* Elementos */
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.tile{background:var(--s1);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px}
+.tile .v{font-size:26px;font-weight:800;letter-spacing:-.02em}
+.tile .l{font-size:12px;color:var(--muted);margin-top:2px}
+.toolbar{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+.toolbar input{max-width:260px}
+.toolbar select{width:auto}
+.seg{display:inline-flex;background:var(--s2);border:1px solid var(--line2);border-radius:8px;padding:2px}
+.seg button{background:none;border:none;color:var(--muted);padding:6px 11px;border-radius:6px;font-size:12.5px;font-weight:600}
+.seg button.on{background:var(--s3);color:var(--text)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px}
+.card{background:var(--s1);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.card.click{cursor:pointer;transition:border-color .15s}
+.card.click:hover{border-color:var(--line2)}
+.card-h{display:flex;align-items:flex-start;gap:8px;margin-bottom:12px}
+.card-h .name{font-weight:700;font-size:15px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pill{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;white-space:nowrap}
+.pill.ok{background:var(--ok-dim);color:var(--ok)}
+.pill.warning{background:var(--warn-dim);color:var(--warn)}
+.pill.critical{background:var(--crit-dim);color:var(--crit)}
+.pill.info{background:var(--info-dim);color:var(--info)}
+.pill.neutral{background:var(--s3);color:var(--muted)}
+.pill.meta{background:var(--blue-dim);color:#a9a7ff}
+.pill.google_ads{background:var(--orange-dim);color:#ffb07f}
+.pace{margin-bottom:12px}
+.pace-top{display:flex;justify-content:space-between;align-items:baseline;font-size:12.5px;margin-bottom:5px;gap:8px}
+.pace-top b{font-weight:700}
+.bar{position:relative;height:8px;background:var(--s3);border-radius:5px;overflow:visible}
+.bar .fill{height:100%;border-radius:5px;max-width:100%}
+.bar .ideal{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--text);opacity:.55;border-radius:1px}
+.pace-sub{font-size:11.5px;color:var(--muted);margin-top:5px}
+.insight{background:var(--s2);border-radius:8px;padding:10px 12px;font-size:12.5px;line-height:1.55;color:var(--muted);margin-top:4px}
+.insight b{color:var(--text)}.insight .act{color:var(--orange);font-weight:700}
+.alert-list{display:flex;flex-direction:column;gap:8px}
+.alert{display:flex;gap:12px;align-items:flex-start;background:var(--s1);border:1px solid var(--line);border-left:3px solid var(--line2);border-radius:10px;padding:12px 14px}
+.alert.critical{border-left-color:var(--crit)}.alert.warning{border-left-color:var(--warn)}.alert.info{border-left-color:var(--info)}
+.alert .msg{flex:1;min-width:0;line-height:1.5}
+.alert .meta{font-size:11.5px;color:var(--muted2);margin-top:3px}
+.alert .acts{display:flex;gap:6px;flex-shrink:0}
+table{width:100%;border-collapse:collapse}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;text-align:left;padding:9px 10px;border-bottom:1px solid var(--line)}
+td{padding:10px;border-bottom:1px solid var(--line);vertical-align:middle;font-size:13px}
+tr:last-child td{border-bottom:none}
+.tbl-wrap{background:var(--s1);border:1px solid var(--line);border-radius:var(--r);overflow-x:auto}
+td select{min-width:170px;padding:6px 8px;font-size:13px}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.switch{position:relative;width:36px;height:20px;display:inline-block}
+.switch input{opacity:0;width:0;height:0}
+.switch span{position:absolute;inset:0;background:var(--s3);border:1px solid var(--line2);border-radius:20px;transition:.15s}
+.switch span:before{content:'';position:absolute;width:14px;height:14px;left:2px;top:2px;background:var(--muted);border-radius:50%;transition:.15s}
+.switch input:checked+span{background:var(--blue);border-color:var(--blue)}
+.switch input:checked+span:before{transform:translateX(16px);background:#fff}
+.empty{text-align:center;color:var(--muted);padding:40px 16px;background:var(--s1);border:1px dashed var(--line2);border-radius:var(--r)}
+.empty b{color:var(--text);display:block;font-size:15px;margin-bottom:6px}
+.section-t{font-size:13px;font-weight:700;margin:22px 0 10px;color:var(--text)}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fg label{display:block;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
+.fg .tip{font-size:11.5px;color:var(--muted2);margin-top:4px}
+.banner{background:var(--warn-dim);border:1px solid rgba(245,166,35,.3);color:#ffd28a;border-radius:10px;padding:10px 14px;font-size:13px;margin-bottom:16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.banner.info{background:var(--blue-dim);border-color:rgba(91,88,255,.35);color:#c9c8ff}
+
+/* Modal / drawer */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:50;display:flex;justify-content:flex-end}
+.drawer{width:min(760px,100%);height:100%;background:var(--s1);border-left:1px solid var(--line2);overflow-y:auto;padding:22px 24px}
+.modal-wrap{align-items:center;justify-content:center;padding:16px}
+.modal{width:min(560px,100%);max-height:92vh;overflow-y:auto;background:var(--s1);border:1px solid var(--line2);border-radius:14px;padding:22px}
+.modal h2,.drawer h2{font-size:18px;margin-bottom:4px}
+.x{background:none;border:none;color:var(--muted);font-size:22px;line-height:1;padding:4px 8px}
+.chart{width:100%;height:170px;display:block}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--s3);border:1px solid var(--line2);padding:10px 16px;border-radius:10px;font-size:13px;z-index:80;box-shadow:0 10px 40px rgba(0,0,0,.5)}
+.toast.err{border-color:var(--crit);color:#ffc2c2}
+.kv{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:10px 0 4px}
+.kv div{background:var(--s2);border-radius:8px;padding:9px 11px}
+.kv .k{font-size:11px;color:var(--muted)}.kv .v{font-weight:700;margin-top:2px}
+.delta.up{color:var(--ok)}.delta.down{color:var(--crit)}
+
+@media (max-width:900px){
+  .side{transform:translateX(-100%);transition:transform .2s}
+  .side.open{transform:none;box-shadow:0 0 60px rgba(0,0,0,.6)}
+  .main{margin-left:0}
+  .menu-btn{display:block}
+  .tiles{grid-template-columns:repeat(2,1fr)}
+  .content{padding:16px 16px 60px}
+  .top{padding:12px 16px}
+  .grid{grid-template-columns:1fr}
+  .form-grid{grid-template-columns:1fr}
+  .kv{grid-template-columns:repeat(2,1fr)}
+  .alert{flex-wrap:wrap}.alert .acts{width:100%;justify-content:flex-end}
+  .toolbar input{max-width:none;flex:1 1 100%}
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="logo" viewBox="0 0 32 32"><g fill="#1B17FF"><ellipse cx="16" cy="8" rx="4.2" ry="6.5"/><ellipse cx="16" cy="8" rx="4.2" ry="6.5" transform="rotate(60 16 16)"/><ellipse cx="16" cy="8" rx="4.2" ry="6.5" transform="rotate(120 16 16)"/><ellipse cx="16" cy="8" rx="4.2" ry="6.5" transform="rotate(180 16 16)"/><ellipse cx="16" cy="8" rx="4.2" ry="6.5" transform="rotate(240 16 16)"/><ellipse cx="16" cy="8" rx="4.2" ry="6.5" transform="rotate(300 16 16)"/></g><circle cx="16" cy="16" r="4.3" fill="#FF751F"/></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></symbol>
+    <symbol id="i-acc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0"/><path d="M17 4a4 4 0 0 1 0 8M22 21a7 7 0 0 0-4-6.3"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/></symbol>
+    <symbol id="i-act" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></symbol>
+  </defs>
+</svg>
+
+<!-- LOGIN -->
+<div class="login" id="login">
+  <form class="login-card" onsubmit="doLogin(event)">
+    <div class="brand" style="margin-bottom:24px"><svg class="brand-mark"><use href="#logo"/></svg>
+      <div><div class="brand-name">Paid Media <span>Monitor</span></div><div class="brand-sub">Docta Nexus</div></div></div>
+    <div class="fg"><label for="pwd">Contraseña</label><input type="password" id="pwd" autocomplete="current-password" autofocus></div>
+    <button class="btn primary" style="width:100%;justify-content:center;margin-top:14px;padding:11px">Ingresar</button>
+    <div class="err" id="loginErr"></div>
+  </form>
+</div>
+
+<!-- APP -->
+<div class="app hidden" id="app">
+  <aside class="side" id="side">
+    <div class="brand"><svg class="brand-mark"><use href="#logo"/></svg>
+      <div><div class="brand-name">Paid Media <span>Monitor</span></div><div class="brand-sub">Docta Nexus</div></div></div>
+    <nav class="nav" id="nav">
+      <button data-p="resumen" class="on"><svg><use href="#i-home"/></svg>Resumen</button>
+      <button data-p="alertas"><svg><use href="#i-bell"/></svg>Alertas<span class="count hidden" id="navAlerts"></span></button>
+      <button data-p="cuentas"><svg><use href="#i-acc"/></svg>Cuentas<span class="count warn hidden" id="navAccounts"></span></button>
+      <button data-p="clientes"><svg><use href="#i-users"/></svg>Clientes y presupuestos</button>
+      <button data-p="avisos"><svg><use href="#i-send"/></svg>Avisos</button>
+      <button data-p="actividad"><svg><use href="#i-act"/></svg>Actividad</button>
+    </nav>
+    <div class="side-foot"><div id="lastRun">—</div><a href="#" onclick="logout();return false" style="color:var(--muted)">Cerrar sesión</a></div>
+  </aside>
+
+  <main class="main">
+    <div class="top">
+      <button class="menu-btn" onclick="toggleMenu()" aria-label="Menú"><svg width="22" height="22"><use href="#i-menu"/></svg></button>
+      <h1 id="title">Resumen</h1>
+      <button class="btn sm" id="btnRunSync" onclick="runJob('sync')">Actualizar datos</button>
+    </div>
+    <div class="content">
+
+      <!-- RESUMEN -->
+      <section class="page on" id="p-resumen">
+        <div id="dashBanner"></div>
+        <div class="tiles" id="tiles"></div>
+        <div class="toolbar">
+          <input id="fSearch" placeholder="Buscar cliente…" oninput="renderDashboard()">
+          <div class="seg" id="fStatus">
+            <button data-v="all" class="on">Todos</button><button data-v="issues">Con alertas</button><button data-v="off">Fuera de ritmo</button>
+          </div>
+          <span class="muted" style="margin-left:auto;font-size:12.5px" id="monthLabel"></span>
+        </div>
+        <div class="grid" id="clientGrid"></div>
+      </section>
+
+      <!-- ALERTAS -->
+      <section class="page" id="p-alertas">
+        <div class="toolbar">
+          <div class="seg" id="aStatus"><button data-v="open" class="on">Abiertas</button><button data-v="snoozed">Pospuestas</button><button data-v="resolved">Resueltas</button></div>
+          <div class="seg" id="aSev"><button data-v="all" class="on">Todas</button><button data-v="critical">Críticas</button><button data-v="warning">Atención</button><button data-v="info">Info</button></div>
+        </div>
+        <div class="alert-list" id="alertList"></div>
+      </section>
+
+      <!-- CUENTAS -->
+      <section class="page" id="p-cuentas">
+        <div class="toolbar">
+          <input id="accSearch" placeholder="Buscar cuenta…" oninput="renderAccounts()">
+          <div class="seg" id="accFilter"><button data-v="all" class="on">Todas</button><button data-v="unassigned">Sin cliente</button><button data-v="paused">Pausadas</button></div>
+          <div class="seg" id="accPlat"><button data-v="all" class="on">Ambas</button><button data-v="meta">Meta</button><button data-v="google_ads">Google</button></div>
+          <button class="btn primary sm" style="margin-left:auto" onclick="openAccount()">+ Agregar cuenta</button>
+        </div>
+        <div class="tbl-wrap"><table><thead><tr><th>Cuenta</th><th>Plataforma</th><th>Estado</th><th>Cliente</th><th>Monitorear</th><th>Última lectura</th><th></th></tr></thead><tbody id="accBody"></tbody></table></div>
+      </section>
+
+      <!-- CLIENTES -->
+      <section class="page" id="p-clientes">
+        <div class="toolbar">
+          <label class="muted" style="font-size:12.5px">Mes</label>
+          <input type="month" id="budgetMonth" style="width:auto" onchange="loadBudgets()">
+          <button class="btn primary sm" style="margin-left:auto" onclick="openClient()">+ Nuevo cliente</button>
+        </div>
+        <div class="tbl-wrap"><table><thead><tr><th>Cliente</th><th>Tipo</th><th class="num">Presup. Meta</th><th class="num">Presup. Google</th><th class="num">Presup. total</th><th>Cuentas</th><th></th></tr></thead><tbody id="cliBody"></tbody></table></div>
+        <p class="muted" style="font-size:12px;margin-top:10px;line-height:1.6">Podés cargar presupuesto por plataforma, total, o ambos. Si solo cargás por plataforma, el total se calcula solo. Los cambios se guardan al salir del campo.</p>
+      </section>
+
+      <!-- AVISOS -->
+      <section class="page" id="p-avisos">
+        <div class="toolbar"><div class="section-t" style="margin:0">Canales</div><button class="btn primary sm" style="margin-left:auto" onclick="openChannel()">+ Agregar canal</button></div>
+        <div class="tbl-wrap"><table><thead><tr><th>Canal</th><th>Destino</th><th>Alcance</th><th>Nivel mínimo</th><th>Modo</th><th>Activo</th><th></th></tr></thead><tbody id="chBody"></tbody></table></div>
+        <div class="section-t">Reglas y horarios</div>
+        <div class="card" style="max-width:760px">
+          <div class="form-grid">
+            <div class="fg"><label>Desvío de ritmo — atención (pp)</label><input type="number" id="sWarn" min="1"></div>
+            <div class="fg"><label>Desvío de ritmo — crítico (pp)</label><input type="number" id="sCrit" min="1"></div>
+            <div class="fg"><label>Resumen diario por mail</label>
+              <div style="display:flex;gap:8px;align-items:center"><label class="switch"><input type="checkbox" id="sDigOn"><span></span></label><input type="time" id="sDigTime" style="width:auto"></div></div>
+            <div class="fg"><label>Chequeos de urgencias (horas)</label><input id="sChecks" placeholder="10,13,16,19"><div class="tip">Se revisa a los :30 de cada hora indicada. Vacío = sin chequeos.</div></div>
+            <div class="fg"><label>Horario de silencio (Slack)</label>
+              <div style="display:flex;gap:8px;align-items:center"><input type="number" id="sQs" min="0" max="23" style="width:80px"> a <input type="number" id="sQe" min="0" max="23" style="width:80px"> hs</div></div>
+          </div>
+          <button class="btn primary" style="margin-top:6px" onclick="saveSettings(this)">Guardar</button>
+        </div>
+      </section>
+
+      <!-- ACTIVIDAD -->
+      <section class="page" id="p-actividad">
+        <div class="toolbar">
+          <button class="btn sm" onclick="runJob('sync')">Sincronizar todo</button>
+          <button class="btn sm" onclick="runJob('check')">Chequeo de urgencias</button>
+          <button class="btn sm" onclick="runJob('digest')">Enviar resumen por mail</button>
+          <button class="btn ghost sm" style="margin-left:auto" onclick="loadRuns()">Refrescar</button>
+        </div>
+        <div class="tbl-wrap"><table><thead><tr><th>Tarea</th><th>Inicio</th><th>Duración</th><th>Estado</th><th>Detalle</th></tr></thead><tbody id="runBody"></tbody></table></div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<div id="overlay"></div>
+
+<script>
+// ── Estado y utilidades ─────────────────────────────────────────
+let TOKEN = null;
+try { TOKEN = sessionStorage.getItem('pmm_token'); } catch (e) {}
+const S = { dash: null, accounts: [], clients: [], budgets: [], alerts: [], channels: [], page: 'resumen' };
+const PL = { meta: 'Meta Ads', google_ads: 'Google Ads', total: 'Total' };
+const PLS = { meta: 'Meta', google_ads: 'Google', total: 'Total' };
+const SEV = { critical: 'Crítico', warning: 'Atención', info: 'Info' };
+const TYPES = { general: 'General', ecommerce: 'eCommerce', leads: 'Leads' };
+const $ = id => document.getElementById(id);
+const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const money = (n, cur) => n == null ? '—' : `${cur ? cur + ' ' : ''}${Math.round(n).toLocaleString('es-AR')}`;
+const pct = n => n == null ? '—' : `${Math.round(n)}%`;
+const dm = s => s ? s.slice(8, 10) + '/' + s.slice(5, 7) : '—';
+function ago(iso) {
+  if (!iso) return 'nunca';
+  const m = Math.round((Date.now() - new Date(iso)) / 60000);
+  if (m < 1) return 'recién'; if (m < 60) return `hace ${m} min`;
+  const h = Math.round(m / 60); if (h < 24) return `hace ${h} h`;
+  return `hace ${Math.round(h / 24)} d`;
+}
+function toast(msg, err) {
+  const t = document.createElement('div'); t.className = 'toast' + (err ? ' err' : ''); t.textContent = msg;
+  document.body.appendChild(t); setTimeout(() => t.remove(), 3500);
+}
+async function api(path, opts = {}) {
+  const r = await fetch('/api' + path, { ...opts, headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + TOKEN, ...(opts.headers || {}) },
+    body: opts.body ? JSON.stringify(opts.body) : undefined });
+  if (r.status === 401 && path !== '/login') { logout(); throw new Error('Sesión vencida'); }
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(d.error || 'Error ' + r.status);
+  return d;
+}
+
+// ── Login ───────────────────────────────────────────────────────
+async function doLogin(e) {
+  e.preventDefault();
+  $('loginErr').textContent = '';
+  try {
+    const d = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: $('pwd').value }) }).then(r => r.json().then(j => r.ok ? j : Promise.reject(new Error(j.error))));
+    TOKEN = d.token; try { sessionStorage.setItem('pmm_token', TOKEN); } catch (e) {}
+    start();
+  } catch (err) { $('loginErr').textContent = err.message; }
+}
+function logout() { TOKEN = null; try { sessionStorage.removeItem('pmm_token'); } catch (e) {} $('app').classList.add('hidden'); $('login').classList.remove('hidden'); }
+function start() {
+  $('login').classList.add('hidden'); $('app').classList.remove('hidden');
+  const hash = location.hash.slice(1);
+  go(['resumen', 'alertas', 'cuentas', 'clientes', 'avisos', 'actividad'].includes(hash) ? hash : 'resumen');
+  loadDashboard();
+}
+
+// ── Navegación ──────────────────────────────────────────────────
+const TITLES = { resumen: 'Resumen', alertas: 'Alertas', cuentas: 'Cuentas publicitarias', clientes: 'Clientes y presupuestos', avisos: 'Avisos', actividad: 'Actividad' };
+function go(p) {
+  S.page = p;
+  document.querySelectorAll('.page').forEach(x => x.classList.toggle('on', x.id === 'p-' + p));
+  document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('on', b.dataset.p === p));
+  $('title').textContent = TITLES[p];
+  history.replaceState(null, '', '#' + p);
+  $('side').classList.remove('open');
+  ({ resumen: loadDashboard, alertas: loadAlerts, cuentas: loadAccounts, clientes: loadClientsPage, avisos: loadAvisos, actividad: loadRuns })[p]();
+}
+document.querySelectorAll('#nav button').forEach(b => b.onclick = () => go(b.dataset.p));
+function toggleMenu() { $('side').classList.toggle('open'); }
+function segs(id, cb) {
+  $(id).querySelectorAll('button').forEach(b => b.onclick = () => { $(id).querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); cb(); });
+}
+const segVal = id => $(id).querySelector('button.on')?.dataset.v;
+segs('fStatus', renderDashboard); segs('aStatus', loadAlerts); segs('aSev', renderAlerts);
+segs('accFilter', renderAccounts); segs('accPlat', renderAccounts);
+
+// ── Resumen ─────────────────────────────────────────────────────
+function paceState(pc) {
+  if (!pc || !pc.budget) return 'neutral';
+  if (pc.pct >= 100 || Math.abs(pc.deviation_pp) > 20) return 'critical';
+  if (Math.abs(pc.deviation_pp) > 10) return 'warning';
+  return 'ok';
+}
+const COLOR = { ok: 'var(--ok)', warning: 'var(--warn)', critical: 'var(--crit)', neutral: 'var(--muted2)' };
+function paceBlock(label, pc, cur) {
+  const st = paceState(pc);
+  if (!pc.budget) {
+    return `<div class="pace"><div class="pace-top"><span>${label}</span><span><b>${money(pc.spend_mtd, cur)}</b> <span class="muted">· sin presupuesto</span></span></div></div>`;
+  }
+  const dev = pc.deviation_pp, gone = pc.pct >= 100;
+  const devTxt = gone ? 'agotado' : Math.abs(dev) < 1 ? 'en ritmo' : `${dev > 0 ? '+' : ''}${Math.round(dev)} pp`;
+  const sub = gone ? `Excedido en ${money(pc.spend_mtd - pc.budget, cur)}` : pc.exhaust_date ? `Se agota el ${dm(pc.exhaust_date)}` : `Proyecta ${pct(pc.projected_pct)} · ideal ${money(pc.ideal_daily, cur)}/día`;
+  return `<div class="pace">
+    <div class="pace-top"><span>${label}</span><span><b>${money(pc.spend_mtd, cur)}</b> <span class="muted">de ${money(pc.budget, cur)}</span></span></div>
+    <div class="bar"><div class="fill" style="width:${Math.max(1.5, Math.min(100, pc.pct))}%;background:${COLOR[st]}"></div><div class="ideal" style="left:${Math.min(100, pc.ideal_pct)}%"></div></div>
+    <div class="pace-sub"><span style="color:${COLOR[st]};font-weight:700">${pct(pc.pct)} · ${devTxt}</span> · ${sub}</div></div>`;
+}
+function clientAlerts(id) { return (S.dash?.alerts || []).filter(a => a.client_id === id); }
+function worstSev(list) { return list.some(a => a.severity === 'critical') ? 'critical' : list.some(a => a.severity === 'warning') ? 'warning' : list.length ? 'info' : null; }
+
+async function loadDashboard() {
+  try {
+    S.dash = await api('/dashboard');
+    renderDashboard(); updateBadges();
+  } catch (e) { $('clientGrid').innerHTML = `<div class="empty"><b>No se pudo cargar</b>${esc(e.message)}</div>`; }
+}
+function updateBadges() {
+  const d = S.dash; if (!d) return;
+  const crit = d.alerts.filter(a => a.severity === 'critical').length, warn = d.alerts.filter(a => a.severity === 'warning').length;
+  const na = $('navAlerts');
+  na.classList.toggle('hidden', !(crit + warn)); na.textContent = crit || warn; na.classList.toggle('warn', !crit);
+  $('navAccounts').classList.toggle('hidden', !d.unassigned_accounts); $('navAccounts').textContent = d.unassigned_accounts;
+  $('lastRun').textContent = d.running ? `Corriendo: ${d.running}…` : d.last_run ? `Última actualización ${ago(d.last_run.finished_at || d.last_run.started_at)}` : 'Sin actualizaciones todavía';
+}
+function renderDashboard() {
+  const d = S.dash; if (!d) return;
+  const banners = [];
+  if (!d.connectors.meta) banners.push('Meta Ads todavía no está conectado (falta META_SYSTEM_USER_TOKEN en Render).');
+  if (!d.connectors.google_ads) banners.push('Google Ads todavía no está conectado (faltan las credenciales GOOGLE_ADS_* en Render).');
+  $('dashBanner').innerHTML = banners.map(b => `<div class="banner">${esc(b)}</div>`).join('') +
+    (d.unassigned_accounts ? `<div class="banner info">Hay ${d.unassigned_accounts} cuenta${d.unassigned_accounts > 1 ? 's' : ''} sin cliente: su gasto no cuenta en ningún presupuesto. <button class="btn sm" onclick="go('cuentas')">Asignar</button></div>` : '');
+  const [y, m] = d.month.split('-');
+  const months = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+  $('monthLabel').textContent = `${months[+m - 1]} ${y} · datos al cierre de ayer`;
+
+  const withB = d.clients.filter(c => c.total.pacing.budget);
+  const off = withB.filter(c => paceState(c.total.pacing) !== 'ok');
+  const crit = d.alerts.filter(a => a.severity === 'critical').length;
+  $('tiles').innerHTML = [
+    [d.clients.length, 'Clientes activos', 'var(--text)'],
+    [`${withB.length - off.length}/${withB.length}`, 'En ritmo de presupuesto', off.length ? 'var(--warn)' : 'var(--ok)'],
+    [crit, 'Alertas críticas', crit ? 'var(--crit)' : 'var(--ok)'],
+    [d.alerts.length, 'Alertas abiertas', d.alerts.length ? 'var(--warn)' : 'var(--ok)'],
+  ].map(([v, l, c]) => `<div class="tile"><div class="v" style="color:${c}">${v}</div><div class="l">${l}</div></div>`).join('');
+
+  const q = $('fSearch').value.trim().toLowerCase(), f = segVal('fStatus');
+  const order = { critical: 0, warning: 1, info: 2, null: 3 };
+  let list = d.clients.filter(c => !q || c.name.toLowerCase().includes(q));
+  if (f === 'issues') list = list.filter(c => clientAlerts(c.id).length);
+  if (f === 'off') list = list.filter(c => ['warning', 'critical'].includes(paceState(c.total.pacing)) || Object.values(c.platforms).some(p => ['warning', 'critical'].includes(paceState(p.pacing))));
+  list.sort((a, b) => order[worstSev(clientAlerts(a.id))] - order[worstSev(clientAlerts(b.id))] || a.name.localeCompare(b.name));
+
+  if (!d.clients.length) {
+    $('clientGrid').innerHTML = `<div class="empty" style="grid-column:1/-1"><b>Empecemos</b>1. Creá un cliente y cargá su presupuesto · 2. Agregá sus cuentas de Meta y Google · 3. Sincronizá.<div style="margin-top:14px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="btn primary" onclick="go('clientes')">Crear cliente</button><button class="btn" onclick="go('cuentas')">Agregar cuentas</button></div></div>`;
+    return;
+  }
+  if (!list.length) { $('clientGrid').innerHTML = `<div class="empty" style="grid-column:1/-1"><b>Nada para mostrar</b>Ningún cliente coincide con el filtro.</div>`; return; }
+
+  $('clientGrid').innerHTML = list.map(c => {
+    const al = clientAlerts(c.id), ws = worstSev(al);
+    const plats = Object.entries(c.platforms);
+    const blocks = plats.map(([p, v]) => paceBlock(PL[p], v.pacing, c.currency));
+    if (plats.length !== 1 || c.total.explicit_budget) blocks.push(paceBlock('<b>Total</b>', c.total.pacing, c.currency));
+    const ins = d.insights[c.id];
+    return `<div class="card click" onclick="openDetail('${c.id}')">
+      <div class="card-h"><div class="name" title="${esc(c.name)}">${esc(c.name)}</div>
+        <span class="pill neutral">${TYPES[c.client_type] || c.client_type}</span>
+        ${ws ? `<span class="pill ${ws}">${al.length} alerta${al.length > 1 ? 's' : ''}</span>` : '<span class="pill ok">OK</span>'}</div>
+      ${plats.length ? blocks.join('') : '<div class="muted" style="font-size:13px;margin-bottom:10px">Sin cuentas asignadas.</div>'}
+      ${ins ? `<div class="insight"><b>IA:</b> ${esc(ins.insight)}<br><span class="act">Acción:</span> ${esc(ins.accion)}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+// Detalle de cliente
+function spendChart(daily, pc, cur) {
+  const dates = Object.keys(daily).filter(k => k.slice(0, 7) === S.dash.month.slice(0, 7)).sort();
+  if (!dates.length) return '<div class="muted" style="font-size:13px">Sin datos de gasto este mes.</div>';
+  const vals = dates.map(k => daily[k]);
+  const idealDaily = pc.budget ? pc.budget / pc.days_in_month : null;
+  const max = Math.max(...vals, idealDaily || 0) * 1.15 || 1;
+  const W = 700, H = 170, pad = 24, n = pc.days_in_month, bw = (W - pad) / n;
+  const bars = dates.map((k, i) => {
+    const day = +k.slice(8, 10), h = (vals[i] / max) * (H - 24), isToday = k === S.dash.today;
+    return `<rect x="${pad + (day - 1) * bw + 1}" y="${H - 18 - h}" width="${Math.max(1, bw - 3)}" height="${h}" rx="2" fill="${isToday ? 'var(--muted2)' : 'var(--blue2)'}"><title>${dm(k)}: ${money(vals[i], cur)}${isToday ? ' (parcial)' : ''}</title></rect>`;
+  }).join('');
+  const iy = idealDaily ? H - 18 - (idealDaily / max) * (H - 24) : null;
+  const labels = [1, 8, 15, 22, n].map(d => `<text x="${pad + (d - 0.5) * bw}" y="${H - 4}" fill="var(--muted)" font-size="10" text-anchor="middle">${d}</text>`).join('');
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${bars}
+    ${iy != null ? `<line x1="${pad}" x2="${W}" y1="${iy}" y2="${iy}" stroke="var(--orange)" stroke-dasharray="4 4" stroke-width="1.5"/><text x="${W - 4}" y="${iy - 5}" fill="var(--orange)" font-size="10" text-anchor="end">ideal ${money(idealDaily, cur)}/día</text>` : ''}
+    ${labels}</svg>`;
+}
+function perfRow(label, cur, l, p, key, fmt, higherBetter) {
+  const a = l[key], b = p[key];
+  let delta = '';
+  if (a != null && b) { const d = (a - b) / b * 100; const good = higherBetter ? d >= 0 : d <= 0; delta = `<span class="delta ${good ? 'up' : 'down'}">${d > 0 ? '+' : ''}${Math.round(d)}%</span>`; }
+  return `<tr><td>${label}</td><td class="num">${fmt(a, cur)}</td><td class="num">${fmt(b, cur)}</td><td class="num">${delta}</td></tr>`;
+}
+function openDetail(id) {
+  const c = S.dash.clients.find(x => x.id === id); if (!c) return;
+  const al = clientAlerts(id), ins = S.dash.insights[id];
+  const n1 = (v) => v == null ? '—' : (Math.round(v * 10) / 10).toLocaleString('es-AR');
+  const plats = Object.entries(c.platforms).map(([p, v]) => {
+    const l = v.perf.last7, pv = v.perf.prev7;
+    return `<div class="section-t">${PL[p]}</div>
+      ${paceBlock('Presupuesto del mes', v.pacing, c.currency)}
+      <div class="tbl-wrap"><table><thead><tr><th>Últimos 7 días</th><th class="num">Actual</th><th class="num">Semana ant.</th><th class="num">Cambio</th></tr></thead><tbody>
+        ${perfRow('Inversión', c.currency, l, pv, 'spend', money, true)}
+        ${perfRow(c.client_type === 'leads' ? 'Leads' : 'Conversiones', c.currency, l, pv, 'conversions', n1, true)}
+        ${perfRow(c.client_type === 'leads' ? 'CPL' : 'CPA', c.currency, l, pv, 'cpa', money, false)}
+        ${c.client_type === 'ecommerce' ? perfRow('ROAS', c.currency, l, pv, 'roas', n1, true) : ''}
+        ${perfRow('CTR %', c.currency, l, pv, 'ctr', n1, true)}
+      </tbody></table></div>`;
+  }).join('');
+  const pc = c.total.pacing;
+  $('overlay').innerHTML = `<div class="overlay" onclick="if(event.target===this)closeOverlay()"><div class="drawer">
+    <div style="display:flex;align-items:flex-start;gap:10px"><div style="flex:1"><h2>${esc(c.name)}</h2><div class="muted">${TYPES[c.client_type]} · ${esc(c.currency)}</div></div><button class="x" onclick="closeOverlay()">×</button></div>
+    <div class="kv"><div><div class="k">Gastado en el mes</div><div class="v">${money(pc.spend_mtd, c.currency)}</div></div>
+      <div><div class="k">Presupuesto</div><div class="v">${money(pc.budget, c.currency)}</div></div>
+      <div><div class="k">Proyección cierre</div><div class="v">${money(pc.projected, c.currency)}</div></div>
+      <div><div class="k">Promedio diario (7d)</div><div class="v">${money(pc.avg_daily_7d, c.currency)}</div></div></div>
+    ${ins ? `<div class="insight" style="margin-top:12px"><b>IA:</b> ${esc(ins.insight)}<br><span class="act">Acción:</span> ${esc(ins.accion)}<br><span class="muted">${esc(ins.cierre || '')}</span></div>` : ''}
+    <div class="section-t">Gasto diario del mes</div>${spendChart(c.total.daily, pc, c.currency)}
+    ${al.length ? `<div class="section-t">Alertas abiertas</div><div class="alert-list">${al.map(a => `<div class="alert ${a.severity}"><div class="msg"><span class="pill ${a.severity}">${SEV[a.severity]}</span> ${esc(a.message)}</div></div>`).join('')}</div>` : ''}
+    ${plats}
+    <div class="section-t">Cuentas</div>
+    <div class="tbl-wrap"><table><tbody>${c.accounts.map(a => `<tr><td>${esc(a.name)}</td><td><span class="pill ${a.platform}">${PLS[a.platform]}</span></td><td class="num">${money(a.spend_mtd, a.currency)}</td><td class="muted">${a.last_error ? '<span style="color:var(--crit)">error de lectura</span>' : ago(a.last_synced_at)}</td></tr>`).join('') || '<tr><td class="muted">Sin cuentas</td></tr>'}</tbody></table></div>
+  </div></div>`;
+}
+function closeOverlay() { $('overlay').innerHTML = ''; }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeOverlay(); });
+
+// ── Alertas ─────────────────────────────────────────────────────
+async function loadAlerts() {
+  $('alertList').innerHTML = '<div class="muted">Cargando…</div>';
+  try { S.alerts = await api('/alerts?status=' + segVal('aStatus')); renderAlerts(); } catch (e) { toast(e.message, 1); }
+}
+function renderAlerts() {
+  const sev = segVal('aSev'), st = segVal('aStatus');
+  const list = S.alerts.filter(a => sev === 'all' || a.severity === sev);
+  if (!list.length) { $('alertList').innerHTML = `<div class="empty"><b>${st === 'open' ? 'Sin alertas abiertas' : 'Nada por acá'}</b>${st === 'open' ? 'Todo en orden por ahora.' : ''}</div>`; return; }
+  const order = { critical: 0, warning: 1, info: 2 };
+  list.sort((a, b) => order[a.severity] - order[b.severity]);
+  $('alertList').innerHTML = list.map(a => `<div class="alert ${a.severity}">
+    <span class="pill ${a.severity}">${SEV[a.severity]}</span>
+    <div class="msg">${esc(a.message)}<div class="meta">Desde ${ago(a.first_seen_at)}${a.status === 'snoozed' ? ` · pospuesta hasta ${new Date(a.snoozed_until).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}` : ''}${a.status === 'resolved' ? ` · resuelta ${ago(a.resolved_at)}` : ''}</div></div>
+    <div class="acts">${a.status === 'open' ? `<button class="btn sm" onclick="snooze('${a.id}',24)">Posponer 1 día</button><button class="btn sm" onclick="snooze('${a.id}',168)">1 semana</button>`
+      : a.status === 'snoozed' ? `<button class="btn sm" onclick="reopen('${a.id}')">Reactivar</button>` : ''}</div></div>`).join('');
+}
+async function snooze(id, h) { try { await api(`/alerts/${id}/snooze`, { method: 'POST', body: { hours: h } }); toast('Alerta pospuesta'); loadAlerts(); loadDashboard(); } catch (e) { toast(e.message, 1); } }
+async function reopen(id) { try { await api(`/alerts/${id}/reopen`, { method: 'POST' }); loadAlerts(); } catch (e) { toast(e.message, 1); } }
+
+// ── Cuentas ─────────────────────────────────────────────────────
+async function loadAccounts() {
+  try { [S.accounts, S.clients] = await Promise.all([api('/accounts'), api('/clients')]); renderAccounts(); } catch (e) { toast(e.message, 1); }
+}
+const ACTIVE = ['ACTIVE', 'ANY_ACTIVE', 'ENABLED'];
+function renderAccounts() {
+  const f = segVal('accFilter'), p = segVal('accPlat'), q = $('accSearch').value.trim().toLowerCase();
+  let list = S.accounts.filter(a => (p === 'all' || a.platform === p) && (!q || (a.name || '').toLowerCase().includes(q) || a.external_id.includes(q)));
+  if (f === 'unassigned') list = list.filter(a => !a.client_id);
+  if (f === 'paused') list = list.filter(a => !a.monitored);
+  if (!S.accounts.length) { $('accBody').innerHTML = `<tr><td colspan="7"><div class="empty" style="border:none"><b>Todavía no hay cuentas</b>Agregá la primera con "+ Agregar cuenta": elegís plataforma, pegás el ID y la asignás a un cliente.</div></td></tr>`; return; }
+  if (!list.length) { $('accBody').innerHTML = `<tr><td colspan="7" class="muted" style="text-align:center;padding:24px">${f === 'unassigned' ? 'Todas las cuentas tienen cliente.' : 'Sin resultados.'}</td></tr>`; return; }
+  const opts = cid => `<option value="">— Sin asignar —</option>` + S.clients.map(c => `<option value="${c.id}" ${c.id === cid ? 'selected' : ''}>${esc(c.name)}</option>`).join('');
+  $('accBody').innerHTML = list.map(a => {
+    const ok = ACTIVE.includes(a.status), unknown = !a.status;
+    return `<tr><td><div style="font-weight:600">${esc(a.name)}</div><div class="muted mono" style="font-size:11.5px">${esc(a.external_id)}</div></td>
+      <td><span class="pill ${a.platform}">${PLS[a.platform]}</span></td>
+      <td><span class="pill ${unknown ? 'neutral' : ok ? 'ok' : 'critical'}">${unknown ? 'Sin leer' : ok ? 'Activa' : esc(a.status)}</span></td>
+      <td><select onchange="assign('${a.id}', this.value)">${opts(a.client_id)}</select></td>
+      <td><label class="switch"><input type="checkbox" ${a.monitored ? 'checked' : ''} onchange="setMon('${a.id}', this.checked)"><span></span></label></td>
+      <td class="muted" style="font-size:12.5px">${a.last_error ? `<span style="color:var(--crit);cursor:help" title="${esc(a.last_error)}">Error de lectura ⓘ</span>` : a.monitored ? ago(a.last_synced_at) : 'pausada'}</td>
+      <td class="num"><button class="btn sm ghost danger" onclick="delAccount('${a.id}')" title="Quitar cuenta">Quitar</button></td></tr>`;
+  }).join('');
+}
+async function assign(id, clientId) {
+  try { const r = await api('/accounts/' + id, { method: 'PUT', body: { client_id: clientId || null } }); Object.assign(S.accounts.find(a => a.id === id), r); toast(clientId ? 'Cuenta asignada — cargando sus datos' : 'Cuenta desasignada'); renderAccounts(); }
+  catch (e) { toast(e.message, 1); }
+}
+async function setMon(id, on) {
+  try { const r = await api('/accounts/' + id, { method: 'PUT', body: { monitored: on } }); Object.assign(S.accounts.find(a => a.id === id), r); renderAccounts(); } catch (e) { toast(e.message, 1); }
+}
+function openAccount() {
+  const opts = `<option value="">— Sin cliente por ahora —</option>` + S.clients.filter(c => c.active).map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('');
+  $('overlay').innerHTML = `<div class="overlay modal-wrap" onclick="if(event.target===this)closeOverlay()"><form class="modal" onsubmit="saveAccount(event)">
+    <div style="display:flex;align-items:center;margin-bottom:14px"><h2 style="flex:1">Agregar cuenta</h2><button type="button" class="x" onclick="closeOverlay()">×</button></div>
+    <div class="form-grid">
+      <div class="fg"><label>Plataforma</label><select name="platform" onchange="accPlatChanged(this.form)"><option value="meta">Meta Ads</option><option value="google_ads">Google Ads</option></select></div>
+      <div class="fg"><label id="idLabel">ID de la cuenta publicitaria</label><input name="external_id" required placeholder="act_123456789"><div class="tip" id="idTip">Administrador de anuncios → selector de cuenta, o la URL (act=…).</div></div>
+    </div>
+    <div class="form-grid" style="margin-top:12px">
+      <div class="fg"><label>Cliente</label><select name="client_id">${opts}</select></div>
+      <div class="fg"><label>Nombre (opcional)</label><input name="name" placeholder="Se completa solo desde la plataforma"></div>
+    </div>
+    ${S.clients.length ? '' : '<div class="banner" style="margin-top:12px">Todavía no creaste clientes. Podés agregar la cuenta y asignarla después.</div>'}
+    <div style="display:flex;gap:8px;margin-top:18px"><span style="flex:1"></span><button type="button" class="btn" onclick="closeOverlay()">Cancelar</button><button class="btn primary" id="accSave">Agregar</button></div>
+  </form></div>`;
+}
+function accPlatChanged(f) {
+  const g = f.platform.value === 'google_ads';
+  f.external_id.placeholder = g ? '123-456-7890' : 'act_123456789';
+  $('idTip').textContent = g ? 'Arriba a la derecha en Google Ads, junto al nombre de la cuenta (10 dígitos).' : 'Administrador de anuncios → selector de cuenta, o la URL (act=…).';
+}
+async function saveAccount(e) {
+  e.preventDefault();
+  const btn = $('accSave'); btn.disabled = true; btn.textContent = 'Verificando…';
+  try {
+    const r = await api('/accounts', { method: 'POST', body: Object.fromEntries(new FormData(e.target).entries()) });
+    closeOverlay();
+    toast(r.warning || `Cuenta "${r.account.name}" agregada — cargando sus datos`, !!r.warning);
+    await loadAccounts(); loadDashboard();
+  } catch (err) { toast(err.message, 1); btn.disabled = false; btn.textContent = 'Agregar'; }
+}
+async function delAccount(id) {
+  const a = S.accounts.find(x => x.id === id);
+  if (!confirm(`¿Quitar "${a?.name}"? Se borran también sus datos guardados.`)) return;
+  try { await api('/accounts/' + id, { method: 'DELETE' }); toast('Cuenta quitada'); await loadAccounts(); loadDashboard(); } catch (e) { toast(e.message, 1); }
+}
+
+// ── Clientes y presupuestos ─────────────────────────────────────
+function currentMonth() { return (S.dash?.month || new Date().toISOString().slice(0, 8) + '01').slice(0, 7); }
+async function loadClientsPage() {
+  if (!$('budgetMonth').value) $('budgetMonth').value = currentMonth();
+  try { [S.clients, S.accounts] = await Promise.all([api('/clients'), api('/accounts')]); await loadBudgets(); } catch (e) { toast(e.message, 1); }
+}
+async function loadBudgets() {
+  const d = await api('/budgets?month=' + $('budgetMonth').value + '-01'); S.budgets = d.budgets; renderClients();
+}
+function renderClients() {
+  if (!S.clients.length) { $('cliBody').innerHTML = `<tr><td colspan="7"><div class="empty" style="border:none"><b>Sin clientes</b>Creá el primero con "+ Nuevo cliente".</div></td></tr>`; return; }
+  const b = (cid, p) => S.budgets.find(x => x.client_id === cid && (x.platform || null) === p)?.amount ?? '';
+  const inp = (cid, p) => `<input type="number" min="0" step="1" value="${b(cid, p)}" placeholder="—" style="width:130px;text-align:right" onchange="saveBudget('${cid}', ${p ? `'${p}'` : 'null'}, this)">`;
+  $('cliBody').innerHTML = S.clients.map(c => {
+    const accs = S.accounts.filter(a => a.client_id === c.id);
+    const m = accs.filter(a => a.platform === 'meta').length, g = accs.filter(a => a.platform === 'google_ads').length;
+    const pSum = (+b(c.id, 'meta') || 0) + (+b(c.id, 'google_ads') || 0);
+    return `<tr style="${c.active ? '' : 'opacity:.5'}"><td><div style="font-weight:600">${esc(c.name)}</div><div class="muted" style="font-size:11.5px">${esc(c.currency)}${c.active ? '' : ' · inactivo'}</div></td>
+      <td><span class="pill neutral">${TYPES[c.client_type]}</span></td>
+      <td class="num">${inp(c.id, 'meta')}</td><td class="num">${inp(c.id, 'google_ads')}</td>
+      <td class="num">${inp(c.id, null)}${!b(c.id, null) && pSum ? `<div class="muted" style="font-size:11px;margin-top:3px">calculado: ${money(pSum)}</div>` : ''}</td>
+      <td>${m ? `<span class="pill meta">${m} Meta</span> ` : ''}${g ? `<span class="pill google_ads">${g} Google</span>` : ''}${!m && !g ? '<span class="muted">—</span>' : ''}</td>
+      <td class="num"><button class="btn sm ghost" onclick="openClient('${c.id}')">Editar</button></td></tr>`;
+  }).join('');
+}
+async function saveBudget(cid, p, el) {
+  try { await api('/budgets', { method: 'PUT', body: { client_id: cid, platform: p, month: $('budgetMonth').value + '-01', amount: el.value } }); el.style.borderColor = 'var(--ok)'; setTimeout(() => el.style.borderColor = '', 1200); await loadBudgets(); }
+  catch (e) { toast(e.message, 1); el.style.borderColor = 'var(--crit)'; }
+}
+function openClient(id) {
+  const c = S.clients.find(x => x.id === id) || { name: '', client_type: 'general', currency: 'ARS', active: true };
+  const v = k => c[k] ?? '';
+  $('overlay').innerHTML = `<div class="overlay modal-wrap" onclick="if(event.target===this)closeOverlay()"><form class="modal" onsubmit="saveClient(event,'${id || ''}')">
+    <div style="display:flex;align-items:center;margin-bottom:14px"><h2 style="flex:1">${id ? 'Editar cliente' : 'Nuevo cliente'}</h2><button type="button" class="x" onclick="closeOverlay()">×</button></div>
+    <div class="fg" style="margin-bottom:12px"><label>Nombre</label><input name="name" required value="${esc(v('name'))}"></div>
+    <div class="form-grid">
+      <div class="fg"><label>Tipo</label><select name="client_type">${Object.entries(TYPES).map(([k, l]) => `<option value="${k}" ${c.client_type === k ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
+      <div class="fg"><label>Moneda</label><input name="currency" value="${esc(v('currency'))}" maxlength="3"></div>
+      <div class="fg"><label>CPA objetivo</label><input name="target_cpa" type="number" step="any" value="${v('target_cpa')}"></div>
+      <div class="fg"><label>CPL objetivo</label><input name="target_cpl" type="number" step="any" value="${v('target_cpl')}"></div>
+      <div class="fg"><label>ROAS objetivo</label><input name="target_roas" type="number" step="any" value="${v('target_roas')}"></div>
+      <div class="fg"><label>Activo</label><label class="switch" style="margin-top:6px"><input type="checkbox" name="active" ${c.active ? 'checked' : ''}><span></span></label></div>
+    </div>
+    <div class="fg" style="margin-top:12px"><label>Notas</label><input name="notes" value="${esc(v('notes'))}"></div>
+    <div style="display:flex;gap:8px;margin-top:18px">${id ? `<button type="button" class="btn danger" onclick="delClient('${id}')">Eliminar</button>` : ''}<span style="flex:1"></span>
+      <button type="button" class="btn" onclick="closeOverlay()">Cancelar</button><button class="btn primary">Guardar</button></div>
+  </form></div>`;
+}
+async function saveClient(e, id) {
+  e.preventDefault();
+  const f = new FormData(e.target), body = Object.fromEntries(f.entries());
+  body.active = !!f.get('active');
+  try { await api(id ? '/clients/' + id : '/clients', { method: id ? 'PUT' : 'POST', body }); closeOverlay(); toast('Cliente guardado'); loadClientsPage(); } catch (err) { toast(err.message, 1); }
+}
+async function delClient(id) {
+  if (!confirm('¿Eliminar este cliente? Sus cuentas quedan sin asignar y se borran sus presupuestos.')) return;
+  try { await api('/clients/' + id, { method: 'DELETE' }); closeOverlay(); loadClientsPage(); } catch (e) { toast(e.message, 1); }
+}
+
+// ── Avisos ──────────────────────────────────────────────────────
+async function loadAvisos() {
+  try {
+    const [ch, st, cl] = await Promise.all([api('/channels'), api('/settings'), api('/clients')]);
+    S.channels = ch.channels; S.chEnv = ch.from_env; S.clients = cl;
+    renderChannels();
+    $('sWarn').value = st.alerts.pacing_warning_pp ?? 10; $('sCrit').value = st.alerts.pacing_critical_pp ?? 20;
+    $('sQs').value = st.alerts.quiet_start ?? 22; $('sQe').value = st.alerts.quiet_end ?? 8;
+    $('sDigOn').checked = !!st.schedule.digest.enabled;
+    $('sDigTime').value = `${String(st.schedule.digest.hour).padStart(2, '0')}:${String(st.schedule.digest.minute || 0).padStart(2, '0')}`;
+    $('sChecks').value = st.schedule.checks.enabled ? st.schedule.checks.hours.join(',') : '';
+  } catch (e) { toast(e.message, 1); }
+}
+function renderChannels() {
+  const cname = id => id ? esc(S.clients.find(c => c.id === id)?.name || '—') : 'Todos los clientes';
+  const rows = S.channels.map(c => `<tr><td><span class="pill ${c.type === 'slack' ? 'meta' : 'neutral'}">${c.type === 'slack' ? 'Slack' : 'Mail'}</span> ${esc(c.label || '')}</td>
+    <td class="muted" style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.type === 'slack' ? 'hooks.slack.com/…' + c.target.slice(-6) : c.target)}</td>
+    <td>${cname(c.client_id)}</td><td><span class="pill ${c.min_severity}">${SEV[c.min_severity]}</span></td>
+    <td>${c.mode === 'instant' ? 'Al instante' : 'Resumen diario'}</td>
+    <td><label class="switch"><input type="checkbox" ${c.active ? 'checked' : ''} onchange="toggleCh('${c.id}',this.checked)"><span></span></label></td>
+    <td class="num" style="white-space:nowrap"><button class="btn sm ghost" onclick="testCh('${c.id}',this)">Probar</button><button class="btn sm ghost" onclick="openChannel('${c.id}')">Editar</button></td></tr>`);
+  const env = (S.chEnv || []).map(c => `<tr style="opacity:.7"><td><span class="pill neutral">${c.type === 'slack' ? 'Slack' : 'Mail'}</span> desde variables de entorno</td><td class="muted">${esc(c.target)}</td><td>Todos los clientes</td><td><span class="pill ${c.min_severity}">${SEV[c.min_severity]}</span></td><td>${c.mode === 'instant' ? 'Al instante' : 'Resumen diario'}</td><td>—</td><td></td></tr>`);
+  $('chBody').innerHTML = [...rows, ...env].join('') || `<tr><td colspan="7"><div class="empty" style="border:none"><b>Sin canales</b>Agregá un mail para el resumen diario y un webhook de Slack para las urgencias.</div></td></tr>`;
+}
+function openChannel(id) {
+  const c = S.channels.find(x => x.id === id) || { type: 'slack', mode: 'instant', min_severity: 'warning', quiet_hours: true, active: true };
+  $('overlay').innerHTML = `<div class="overlay modal-wrap" onclick="if(event.target===this)closeOverlay()"><form class="modal" onsubmit="saveChannel(event,'${id || ''}')">
+    <div style="display:flex;align-items:center;margin-bottom:14px"><h2 style="flex:1">${id ? 'Editar canal' : 'Nuevo canal'}</h2><button type="button" class="x" onclick="closeOverlay()">×</button></div>
+    <div class="form-grid">
+      <div class="fg"><label>Tipo</label><select name="type" onchange="chTypeChanged(this.form)"><option value="slack" ${c.type === 'slack' ? 'selected' : ''}>Slack</option><option value="email" ${c.type === 'email' ? 'selected' : ''}>Mail</option></select></div>
+      <div class="fg"><label>Nombre</label><input name="label" value="${esc(c.label || '')}" placeholder="#alertas-paid-media"></div>
+    </div>
+    <div class="fg" style="margin:12px 0"><label id="tLabel">${c.type === 'email' ? 'Mail' : 'Webhook de Slack'}</label><input name="target" required value="${esc(c.target || '')}" placeholder="${c.type === 'email' ? 'nombre@doctanexus.com' : 'https://hooks.slack.com/services/…'}">
+      <div class="tip" id="tTip">${c.type === 'email' ? '' : 'En Slack: Apps → Incoming Webhooks → elegí el canal → copiá la URL.'}</div></div>
+    <div class="form-grid">
+      <div class="fg"><label>Alcance</label><select name="client_id"><option value="">Todos los clientes</option>${S.clients.map(x => `<option value="${x.id}" ${x.id === c.client_id ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select></div>
+      <div class="fg"><label>Nivel mínimo</label><select name="min_severity">${['critical', 'warning', 'info'].map(s => `<option value="${s}" ${c.min_severity === s ? 'selected' : ''}>${SEV[s]}</option>`).join('')}</select></div>
+      <div class="fg"><label>Modo</label><select name="mode"><option value="instant" ${c.mode === 'instant' ? 'selected' : ''}>Al instante</option><option value="digest" ${c.mode === 'digest' ? 'selected' : ''}>Resumen diario</option></select></div>
+      <div class="fg"><label>Respetar horario de silencio</label><label class="switch" style="margin-top:6px"><input type="checkbox" name="quiet_hours" ${c.quiet_hours ? 'checked' : ''}><span></span></label></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:18px">${id ? `<button type="button" class="btn danger" onclick="delChannel('${id}')">Eliminar</button>` : ''}<span style="flex:1"></span>
+      <button type="button" class="btn" onclick="closeOverlay()">Cancelar</button><button class="btn primary">Guardar</button></div>
+  </form></div>`;
+}
+function chTypeChanged(f) {
+  const mail = f.type.value === 'email';
+  $('tLabel').textContent = mail ? 'Mail' : 'Webhook de Slack';
+  f.target.placeholder = mail ? 'nombre@doctanexus.com' : 'https://hooks.slack.com/services/…';
+  $('tTip').textContent = mail ? '' : 'En Slack: Apps → Incoming Webhooks → elegí el canal → copiá la URL.';
+  if (mail) { f.mode.value = 'digest'; f.min_severity.value = 'info'; } else { f.mode.value = 'instant'; f.min_severity.value = 'warning'; }
+}
+async function saveChannel(e, id) {
+  e.preventDefault();
+  const f = new FormData(e.target), body = Object.fromEntries(f.entries());
+  body.quiet_hours = !!f.get('quiet_hours'); body.active = true;
+  try { await api(id ? '/channels/' + id : '/channels', { method: id ? 'PUT' : 'POST', body }); closeOverlay(); toast('Canal guardado'); loadAvisos(); } catch (err) { toast(err.message, 1); }
+}
+async function toggleCh(id, on) { try { await api('/channels/' + id, { method: 'PUT', body: { active: on } }); } catch (e) { toast(e.message, 1); } }
+async function delChannel(id) { if (!confirm('¿Eliminar este canal?')) return; try { await api('/channels/' + id, { method: 'DELETE' }); closeOverlay(); loadAvisos(); } catch (e) { toast(e.message, 1); } }
+async function testCh(id, btn) { btn.disabled = true; try { await api(`/channels/${id}/test`, { method: 'POST' }); toast('Mensaje de prueba enviado'); } catch (e) { toast(e.message, 1); } btn.disabled = false; }
+async function saveSettings(btn) {
+  btn.disabled = true;
+  const [h, m] = ($('sDigTime').value || '09:00').split(':');
+  const hours = $('sChecks').value.split(',').map(s => parseInt(s, 10)).filter(n => n >= 0 && n < 24);
+  try {
+    await api('/settings', { method: 'PUT', body: {
+      alerts: { pacing_warning_pp: $('sWarn').value, pacing_critical_pp: $('sCrit').value, quiet_start: $('sQs').value, quiet_end: $('sQe').value },
+      schedule: { digest: { enabled: $('sDigOn').checked, hour: h, minute: m }, checks: { enabled: hours.length > 0, hours } } } });
+    toast('Configuración guardada');
+  } catch (e) { toast(e.message, 1); }
+  btn.disabled = false;
+}
+
+// ── Actividad ───────────────────────────────────────────────────
+const JOBS = { daily_sync: 'Sincronización diaria', critical_check: 'Chequeo de urgencias', digest: 'Resumen por mail' };
+async function loadRuns() {
+  try {
+    const runs = await api('/runs');
+    $('runBody').innerHTML = runs.map(r => {
+      const dur = r.finished_at ? Math.round((new Date(r.finished_at) - new Date(r.started_at)) / 1000) + ' s' : '…';
+      const st = { ok: ['ok', 'OK'], partial: ['warning', 'Parcial'], error: ['critical', 'Error'], running: ['info', 'Corriendo'] }[r.status];
+      const s = r.summary || {};
+      const det = s.error ? s.error : [s.sync ? `${s.sync.ok}/${s.sync.accounts} cuentas` : '', s.alerts ? `${s.alerts.created} alertas nuevas, ${s.alerts.resolved} resueltas` : '',
+        s.notify?.sent ? `${s.notify.sent} aviso${s.notify.sent > 1 ? 's' : ''}` : '', s.digest ? (s.digest.ok ? `${s.digest.sent} mail${s.digest.sent !== 1 ? 's' : ''}` : (s.digest.error || (s.digest.errors || []).join(', '))) : '',
+        s.sync?.failed?.length ? `fallaron: ${s.sync.failed.map(f => f.account).join(', ')}` : ''].filter(Boolean).join(' · ');
+      return `<tr><td>${JOBS[r.job] || esc(r.job)}</td><td class="muted">${new Date(r.started_at).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</td>
+        <td class="muted">${dur}</td><td><span class="pill ${st[0]}">${st[1]}</span></td><td style="font-size:12.5px">${esc(det)}</td></tr>`;
+    }).join('') || `<tr><td colspan="5" class="muted" style="text-align:center;padding:24px">Todavía no corrió ninguna tarea.</td></tr>`;
+  } catch (e) { toast(e.message, 1); }
+}
+async function runJob(job) {
+  try {
+    await api('/run/' + job, { method: 'POST' });
+    toast({ sync: 'Sincronizando… tarda unos minutos', check: 'Chequeo en curso…', digest: 'Enviando resumen…' }[job]);
+    setTimeout(() => { if (S.page === 'actividad') loadRuns(); loadDashboard(); }, 4000);
+  } catch (e) { toast(e.message, 1); }
+}
+
+if (TOKEN) start();
+</script>
+</body>
+</html>
